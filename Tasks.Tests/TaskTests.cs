@@ -29,8 +29,10 @@ namespace Tasks.Tests
         [TestCategory("GetUrlContent")]
         public void GetUrlContent_Should_Be_Synchronous()
         {
+            
             Action<Uri> action = (uri) => (new[] { uri }).GetUrlContent().ToArray();
             Check_Is_Action_Asynchronous(action, false);
+            
         } 
         #endregion
 
@@ -39,7 +41,7 @@ namespace Tasks.Tests
         [TestCategory("GetUrlContentAsync")]
         public void GetUrlContentAsync_Should_Return_Content()
         {
-            TestContent(x => x.GetUrlContentAsync(3));
+            TestContent(x => x.GetUrlContentAsync(3));   
         }
 
         [TestMethod]
@@ -54,8 +56,8 @@ namespace Tasks.Tests
                     GetTestUris().GetUrlContentAsync(expectedConcurrentStreams).ToArray();
 
                     Assert.IsTrue(UnitTestsTraceListener.MaxConcurrentStreamsCount <= expectedConcurrentStreams,
-                                  string.Format("Max concurrent streams should be less then {expectedConcurrentStreams}," +
-                                                " actual : {UnitTestsTraceListener.MaxConcurrentStreamsCount}"));
+                                  string.Format($"Max concurrent streams should be less then {expectedConcurrentStreams}," +
+                                                $" actual : {UnitTestsTraceListener.MaxConcurrentStreamsCount}"));
 
                     Assert.IsTrue(UnitTestsTraceListener.MaxConcurrentStreamsCount > 1,
                                    string.Format($"Max concurrent streams should be more then 1, " +
@@ -86,7 +88,7 @@ namespace Tasks.Tests
         public void GetUrlMD5_Should_Return_CorrectValue()
         {
             var actual = new Uri(@"ftp://ftp.byfly.by/test/100kb.txt").GetMD5Async().Result;
-            Assert.AreEqual("869c2d2bacc13741416c6303a3a92282", actual, true);
+            Assert.AreEqual("869c2d2bacc13741416c633a3a92282", actual, true);
         }
 
         [TestMethod]

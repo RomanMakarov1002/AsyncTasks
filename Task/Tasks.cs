@@ -1,6 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -17,8 +21,9 @@ namespace Task
         /// <returns>The sequence of downloaded url content</returns>
         public static IEnumerable<string> GetUrlContent(this IEnumerable<Uri> uris)
         {
-            // TODO : Implement GetUrlContent
-            throw new NotImplementedException();
+            WebClient wc = new WebClient();
+            return uris.Select(item => wc.DownloadString(item)).ToList();
+            
         }
 
         /// <summary>
@@ -32,9 +37,31 @@ namespace Task
         /// <param name="maxConcurrentStreams">Max count of concurrent request streams</param>
         /// <returns>The sequence of downloaded url content</returns>
         public static IEnumerable<string> GetUrlContentAsync(this IEnumerable<Uri> uris, int maxConcurrentStreams)
-        {
-            // TODO : Implement GetUrlContentAsync
-            throw new NotImplementedException();
+        {           
+                List<string> result = new List<string>();
+                int length = uris.Count();
+                Func<Uri, string>[] arrOfDownloads = new Func<Uri, string>[Math.Min(maxConcurrentStreams, length)];
+                for (int i = 0; i < arrOfDownloads.Length; i++)
+                    arrOfDownloads[i] = new WebClient().DownloadString;
+                int k;
+                IAsyncResult[] results = new IAsyncResult[arrOfDownloads.Length];
+                for (int i = 0; i < length; i++)
+                {
+                    if (i < maxConcurrentStreams)
+                        results[i] = arrOfDownloads[i].BeginInvoke(uris.ElementAt(i), null, null);
+                    else
+                    {
+                        k = i%maxConcurrentStreams;
+                        if (results[k].IsCompleted)
+                        {
+                            result.Add(arrOfDownloads[k].EndInvoke(results[k]));
+                            results[k] = arrOfDownloads[k].BeginInvoke(uris.ElementAt(i), null, null);
+                        }
+                        else
+                            i--;
+                    }
+                }
+                return result;      
         }
 
         /// <summary>
@@ -45,10 +72,28 @@ namespace Task
         /// </summary>
         /// <param name="resource">Uri of resource</param>
         /// <returns>MD5 hash</returns>
-        public static Task<string> GetMD5Async(this Uri resource)
+        public static async Task<string> GetMD5Async(this Uri resource)
         {
-            // TODO : Implement GetMD5Async
-            throw new NotImplementedException();
+            Stream stream;            
+            if (resource.Scheme == "ftp")
+            {
+                FtpWebRequest request = (FtpWebRequest) WebRequest.Create(resource);
+                request.Method = WebRequestMethods.Ftp.DownloadFile;
+                FtpWebResponse response = (FtpWebResponse)await request.GetResponseAsync();
+                stream = response.GetResponseStream();
+            }
+            else
+            {
+                stream = await new HttpClient().GetStreamAsync(resource);
+            }
+            MD5 md5 = new MD5CryptoServiceProvider();
+            byte[] res = md5.ComputeHash(stream);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < res.Length; i++)
+            {
+                sb.Append(res[i].ToString("X"));
+            }
+            return sb.ToString();
         }
     }
 }
